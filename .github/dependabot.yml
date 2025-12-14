@@ -4,27 +4,27 @@ updates:
   - package-ecosystem: "cargo"
     directory: "/src"
     schedule:
-      interval: "hourly"
+      interval: "daily"
     open-pull-requests-limit: 25
 
   # Python packages (pip/requirements.txt)
   - package-ecosystem: "pip"
     directory: "/src"
     schedule:
-      interval: "hourly"
+      interval: "daily"
     open-pull-requests-limit: 25
 
   # JavaScript/TypeScript (npm/yarn)
   - package-ecosystem: "npm"
     directory: "/src"
     schedule:
-      interval: "hourly"
+      interval: "daily"
     open-pull-requests-limit: 25
 
   # GitHub Actions workflows
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "hourly"
+      interval: "daily"
     open-pull-requests-limit: 25
 
