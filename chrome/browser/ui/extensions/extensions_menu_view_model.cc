@@ -28,8 +28,11 @@
 #include "extensions/browser/extension_system.h"
 #include "extensions/browser/permissions/active_tab_permission_granter.h"
 #include "extensions/browser/permissions/site_permissions_helper.h"
+#include "extensions/buildflags/buildflags.h"
 #include "extensions/common/permissions/permissions_data.h"
 #include "ui/base/l10n/l10n_util.h"
+
+static_assert(BUILDFLAG(ENABLE_EXTENSIONS_CORE));
 
 namespace {
 
@@ -126,44 +129,6 @@ bool CanUserCustomizeExtensionSiteAccess(
          PermissionsManager::UserSiteSetting::kCustomizeByExtension;
 }
 
-// Returns whether the site permissions button should be visible.
-bool IsSitePermissionsButtonVisible(const extensions::Extension& extension,
-                                    Profile& profile,
-                                    const ToolbarActionsModel& toolbar_model,
-                                    content::WebContents& web_contents) {
-  // Button is never visible when site is restricted.
-  if (toolbar_model.IsRestrictedUrl(web_contents.GetLastCommittedURL())) {
-    return false;
-  }
-
-  PermissionsManager::UserSiteSetting user_site_setting =
-      PermissionsManager::Get(&profile)->GetUserSiteSetting(
-          web_contents.GetPrimaryMainFrame()->GetLastCommittedOrigin());
-  switch (user_site_setting) {
-    case PermissionsManager::UserSiteSetting::kCustomizeByExtension: {
-      // Extensions should always display the button.
-      return true;
-    }
-    case PermissionsManager::UserSiteSetting::kBlockAllExtensions: {
-      // Extension should only display the button when it's an enterprise
-      // extension and has granted access.
-      bool enterprise_forced_access =
-          extensions::ExtensionSystem::Get(&profile)
-              ->management_policy()
-              ->HasEnterpriseForcedAccess(extension);
-      SitePermissionsHelper::SiteInteraction site_interaction =
-          SitePermissionsHelper(&profile).GetSiteInteraction(extension,
-                                                             &web_contents);
-      return enterprise_forced_access &&
-             site_interaction ==
-                 SitePermissionsHelper::SiteInteraction::kGranted;
-    }
-    case PermissionsManager::UserSiteSetting::kGrantAllExtensions: {
-      NOTREACHED();
-    }
-  }
-}
-
 // Returns the status for the site permissions button.
 ExtensionsMenuViewModel::ControlState::Status GetSitePermissionsButtonStatus(
     const extensions::Extension& extension,
@@ -172,16 +137,53 @@ ExtensionsMenuViewModel::ControlState::Status GetSitePermissionsButtonStatus(
     content::WebContents& web_contents,
     bool is_enterprise,
     SitePermissionsHelper::SiteInteraction site_interaction) {
-  bool is_site_permissions_button_visible = IsSitePermissionsButtonVisible(
-      extension, profile, toolbar_model, web_contents);
-  if (!is_site_permissions_button_visible) {
+  auto url = web_contents.GetLastCommittedURL();
+
+  // Button is hidden when site is restricted.
+  if (toolbar_model.IsRestrictedUrl(url)) {
     return ExtensionsMenuViewModel::ControlState::Status::kHidden;
   }
 
-  return CanUserCustomizeExtensionSiteAccess(extension, profile, toolbar_model,
-                                             web_contents)
-             ? ExtensionsMenuViewModel::ControlState::Status::kEnabled
-             : ExtensionsMenuViewModel::ControlState::Status::kDisabled;
+  // Button is disabled when site is blocked by policy.
+  // TODO(crbug.com/40879945): Consider only showing the site permissions
+  // button only for enterprise installed extensions on policy-blocked
+  // sites, similar to how we do for user-blocked sites.
+  if (extension.permissions_data()->IsPolicyBlockedHost(url)) {
+    return ExtensionsMenuViewModel::ControlState::Status::kDisabled;
+  }
+
+  auto user_site_setting =
+      PermissionsManager::Get(&profile)->GetUserSiteSetting(
+          web_contents.GetPrimaryMainFrame()->GetLastCommittedOrigin());
+
+  if (is_enterprise) {
+    // Button is hidden when enterprise extension has no granted access on a
+    // user-blocked site.
+    if (user_site_setting ==
+            PermissionsManager::UserSiteSetting::kBlockAllExtensions &&
+        site_interaction == SitePermissionsHelper::SiteInteraction::kNone) {
+      return ExtensionsMenuViewModel::ControlState::Status::kHidden;
+    }
+    // Otherwise, button is disabled.
+    return ExtensionsMenuViewModel::ControlState::Status::kDisabled;
+  }
+
+  // Button is hidden for non-enterprise extension when user blocked extensions
+  // on the site.
+  if (user_site_setting ==
+      PermissionsManager::UserSiteSetting::kBlockAllExtensions) {
+    return ExtensionsMenuViewModel::ControlState::Status::kHidden;
+  }
+
+  // Button is enabled for non-enterprise extension when user can customize the
+  // extension's site access.
+  if (CanUserCustomizeExtensionSiteAccess(extension, profile, toolbar_model,
+                                          web_contents)) {
+    return ExtensionsMenuViewModel::ControlState::Status::kEnabled;
+  }
+
+  // Otherwise, button is disabled for non-enterprise extensions.
+  return ExtensionsMenuViewModel::ControlState::Status::kDisabled;
 }
 
 std::u16string GetSitePermissionsButtonText(
@@ -492,13 +494,9 @@ ExtensionsMenuViewModel::ControlState::operator=(const ControlState&) = default;
 ExtensionsMenuViewModel::ControlState::~ControlState() = default;
 
 ExtensionsMenuViewModel::ExtensionsMenuViewModel(
-    BrowserWindowInterface* browser,
-    std::unique_ptr<ExtensionsMenuViewPlatformDelegate> platform_delegate)
+    BrowserWindowInterface* browser)
     : browser_(browser),
-      platform_delegate_(std::move(platform_delegate)),
       toolbar_model_(ToolbarActionsModel::Get(browser_->GetProfile())) {
-  platform_delegate_->AttachToModel(this);
-
   permissions_manager_observation_.Observe(
       extensions::PermissionsManager::Get(browser_->GetProfile()));
   toolbar_model_observation_.Observe(toolbar_model_.get());
@@ -506,8 +504,14 @@ ExtensionsMenuViewModel::ExtensionsMenuViewModel(
   tab_list_interface_observation_.Observe(tab_list);
 }
 
-ExtensionsMenuViewModel::~ExtensionsMenuViewModel() {
-  platform_delegate_->DetachFromModel();
+ExtensionsMenuViewModel::~ExtensionsMenuViewModel() = default;
+
+void ExtensionsMenuViewModel::AddObserver(Observer* observer) {
+  observers_.AddObserver(observer);
+}
+
+void ExtensionsMenuViewModel::RemoveObserver(Observer* observer) {
+  observers_.RemoveObserver(observer);
 }
 
 void ExtensionsMenuViewModel::UpdateSiteAccess(
@@ -886,8 +890,9 @@ void ExtensionsMenuViewModel::OnHostAccessRequestAdded(
     return;
   }
 
-  platform_delegate_->OnHostAccessRequestAddedOrUpdated(extension_id,
-                                                        web_contents);
+  for (Observer& observer : observers_) {
+    observer.OnHostAccessRequestAddedOrUpdated(extension_id, web_contents);
+  }
 }
 
 void ExtensionsMenuViewModel::OnHostAccessRequestUpdated(
@@ -904,11 +909,15 @@ void ExtensionsMenuViewModel::OnHostAccessRequestUpdated(
       extensions::PermissionsManager::Get(browser_->GetProfile());
   if (permissions_manager->HasActiveHostAccessRequest(tab_id, extension_id)) {
     // Update the request iff it's an active one.
-    platform_delegate_->OnHostAccessRequestAddedOrUpdated(
-        extension_id, GetActiveWebContents());
+    for (Observer& observer : observers_) {
+      observer.OnHostAccessRequestAddedOrUpdated(extension_id,
+                                                 GetActiveWebContents());
+    }
   } else {
     // Otherwise, remove the request if existent.
-    platform_delegate_->OnHostAccessRequestRemoved(extension_id);
+    for (Observer& observer : observers_) {
+      observer.OnHostAccessRequestRemoved(extension_id);
+    }
   }
 }
 
@@ -922,7 +931,9 @@ void ExtensionsMenuViewModel::OnHostAccessRequestRemoved(
     return;
   }
 
-  platform_delegate_->OnHostAccessRequestRemoved(extension_id);
+  for (Observer& observer : observers_) {
+    observer.OnHostAccessRequestRemoved(extension_id);
+  }
 }
 
 void ExtensionsMenuViewModel::OnHostAccessRequestsCleared(int tab_id) {
@@ -933,7 +944,9 @@ void ExtensionsMenuViewModel::OnHostAccessRequestsCleared(int tab_id) {
     return;
   }
 
-  platform_delegate_->OnHostAccessRequestsCleared();
+  for (Observer& observer : observers_) {
+    observer.OnHostAccessRequestsCleared();
+  }
 }
 
 void ExtensionsMenuViewModel::OnHostAccessRequestDismissedByUser(
@@ -947,53 +960,73 @@ void ExtensionsMenuViewModel::OnHostAccessRequestDismissedByUser(
     return;
   }
 
-  platform_delegate_->OnHostAccessRequestDismissedByUser(extension_id);
+  for (Observer& observer : observers_) {
+    observer.OnHostAccessRequestDismissedByUser(extension_id);
+  }
 }
 
 void ExtensionsMenuViewModel::OnShowAccessRequestsInToolbarChanged(
     const extensions::ExtensionId& extension_id,
     bool can_show_requests) {
-  platform_delegate_->OnShowHostAccessRequestsInToolbarChanged(
-      extension_id, can_show_requests);
+  for (Observer& observer : observers_) {
+    observer.OnShowHostAccessRequestsInToolbarChanged(extension_id,
+                                                      can_show_requests);
+  }
 }
 
 void ExtensionsMenuViewModel::OnUserPermissionsSettingsChanged(
     const extensions::PermissionsManager::UserPermissionsSettings& settings) {
-  platform_delegate_->OnUserPermissionsSettingsChanged();
+  for (Observer& observer : observers_) {
+    observer.OnUserPermissionsSettingsChanged();
+  }
 }
 
 void ExtensionsMenuViewModel::OnToolbarActionAdded(
     const ToolbarActionsModel::ActionId& action_id) {
-  platform_delegate_->OnToolbarActionAdded(action_id);
+  for (Observer& observer : observers_) {
+    observer.OnToolbarActionAdded(action_id);
+  }
 }
 
 void ExtensionsMenuViewModel::OnToolbarActionRemoved(
     const ToolbarActionsModel::ActionId& action_id) {
-  platform_delegate_->OnToolbarActionRemoved(action_id);
+  for (Observer& observer : observers_) {
+    observer.OnToolbarActionRemoved(action_id);
+  }
 }
 
 void ExtensionsMenuViewModel::OnToolbarActionUpdated(
     const ToolbarActionsModel::ActionId& action_id) {
-  platform_delegate_->OnToolbarActionUpdated();
+  for (Observer& observer : observers_) {
+    observer.OnToolbarActionUpdated();
+  }
 }
 
 void ExtensionsMenuViewModel::OnToolbarModelInitialized() {
-  platform_delegate_->OnToolbarModelInitialized();
+  for (Observer& observer : observers_) {
+    observer.OnToolbarModelInitialized();
+  }
 }
 
 void ExtensionsMenuViewModel::OnToolbarPinnedActionsChanged() {
-  platform_delegate_->OnToolbarPinnedActionsChanged();
+  for (Observer& observer : observers_) {
+    observer.OnToolbarPinnedActionsChanged();
+  }
 }
 
 void ExtensionsMenuViewModel::OnActiveTabChanged(tabs::TabInterface* tab) {
   auto* web_contents = tab->GetContents();
-  platform_delegate_->OnActiveWebContentsChanged(web_contents);
+  for (Observer& observer : observers_) {
+    observer.OnActiveWebContentsChanged(web_contents);
+  }
 }
 
 void ExtensionsMenuViewModel::DidFinishNavigation(
     content::NavigationHandle* handle) {
   auto* web_contents = GetActiveWebContents();
-  platform_delegate_->OnActiveWebContentsChanged(web_contents);
+  for (Observer& observer : observers_) {
+    observer.OnActiveWebContentsChanged(web_contents);
+  }
 }
 
 content::WebContents* ExtensionsMenuViewModel::GetActiveWebContents() {

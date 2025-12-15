@@ -42,7 +42,7 @@
 #import "components/translate/core/browser/translate_manager.h"
 #import "components/trusted_vault/trusted_vault_server_constants.h"
 #import "ios/chrome/browser/app_launcher/model/app_launcher_tab_helper_browser_presentation_provider.h"
-#import "ios/chrome/browser/app_store_rating/ui_bundled/features.h"
+#import "ios/chrome/browser/app_store_rating/model/features.h"
 #import "ios/chrome/browser/authentication/trusted_vault_reauthentication/coordinator/trusted_vault_reauthentication_coordinator.h"
 #import "ios/chrome/browser/authentication/trusted_vault_reauthentication/coordinator/trusted_vault_reauthentication_coordinator_delegate.h"
 #import "ios/chrome/browser/authentication/ui_bundled/continuation.h"
@@ -3153,13 +3153,13 @@ const char kChromeAppStoreUrl[] =
 
 #pragma mark - BWGCommands
 
-- (void)startGeminiFlowWithEntryPoint:(bwg::EntryPoint)entryPoint {
+- (void)startGeminiFlowWithEntryPoint:(gemini::EntryPoint)entryPoint {
   [self startGeminiFlowWithImageAttachment:nil entryPoint:entryPoint];
 }
 
 - (void)startGeminiFlowWithImageAttachment:(UIImage*)image
-                                entryPoint:(bwg::EntryPoint)entryPoint {
-  if (entryPoint == bwg::EntryPoint::ImageContextMenu) {
+                                entryPoint:(gemini::EntryPoint)entryPoint {
+  if (entryPoint == gemini::EntryPoint::ImageContextMenu) {
     BwgBrowserAgent::FromBrowser(self.browser)
         ->StartGeminiFlow(self.viewController, image);
     return;
@@ -3185,7 +3185,7 @@ const char kChromeAppStoreUrl[] =
 - (void)showBWGPromoIfPageIsEligible {
   BwgService* BWGService = BwgServiceFactory::GetForProfile(self.profile);
   if (BWGService->IsBwgAvailableForWebState(self.activeWebState)) {
-    [self startGeminiFlowWithEntryPoint:bwg::EntryPoint::Promo];
+    [self startGeminiFlowWithEntryPoint:gemini::EntryPoint::Promo];
   }
 }
 

@@ -52,8 +52,8 @@
 #import "ios/chrome/app/profile/profile_state_observer.h"
 #import "ios/chrome/app/tests_hook.h"
 #import "ios/chrome/browser/ai_prototyping/coordinator/ai_prototyping_coordinator.h"
-#import "ios/chrome/browser/app_store_rating/ui_bundled/app_store_rating_scene_agent.h"
-#import "ios/chrome/browser/app_store_rating/ui_bundled/features.h"
+#import "ios/chrome/browser/app_store_rating/model/app_store_rating_scene_agent.h"
+#import "ios/chrome/browser/app_store_rating/model/features.h"
 #import "ios/chrome/browser/appearance/ui_bundled/appearance_customization.h"
 #import "ios/chrome/browser/authentication/account_menu/coordinator/account_menu_coordinator.h"
 #import "ios/chrome/browser/authentication/account_menu/coordinator/account_menu_coordinator_delegate.h"
@@ -92,7 +92,7 @@
 #import "ios/chrome/browser/incognito_interstitial/ui_bundled/incognito_interstitial_coordinator_delegate.h"
 #import "ios/chrome/browser/incognito_reauth/ui_bundled/incognito_reauth_scene_agent.h"
 #import "ios/chrome/browser/infobars/model/infobar_manager_impl.h"
-#import "ios/chrome/browser/intelligence/bwg/coordinator/bwg_promo_scene_agent.h"
+#import "ios/chrome/browser/intelligence/bwg/coordinator/gemini_promo_scene_agent.h"
 #import "ios/chrome/browser/intelligence/features/features.h"
 #import "ios/chrome/browser/intents/model/user_activity_browser_agent.h"
 #import "ios/chrome/browser/lens/ui_bundled/lens_entrypoint.h"
@@ -1879,7 +1879,7 @@ void RecordIfNeededSigninFullscreenPromoEvent(
   }
 
   if (IsPageActionMenuEnabled()) {
-    [sceneState addAgent:[[BWGPromoSceneAgent alloc]
+    [sceneState addAgent:[[GeminiPromoSceneAgent alloc]
                              initWithPromosManager:promosManager]];
   }
 }

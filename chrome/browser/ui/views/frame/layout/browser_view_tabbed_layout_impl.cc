@@ -161,6 +161,33 @@ bool BrowserViewTabbedLayoutImpl::ShadowOverlayVisible() const {
   return views().toolbar_height_side_panel->GetVisible();
 }
 
+int BrowserViewTabbedLayoutImpl::GetCollapsedVerticalTabStripRelativeTop(
+    const BrowserLayoutParams& params) const {
+  // When the top container isn't in the browser view, the exclusion won't apply
+  // and the tabstrip goes all the way to the top.
+  if (!IsParentedTo(views().top_container, views().browser_view)) {
+    return 0;
+  }
+
+  // If there is no leading exclusion, the tabstrip goes all the way to the top.
+  if (params.leading_exclusion.IsEmpty()) {
+    return 0;
+  }
+
+  const int exclusion_height =
+      base::ClampCeil(params.leading_exclusion.ContentWithPadding().height());
+
+  // Try to align with toolbar. But if it's not visible, then don't.
+  if (!delegate().IsToolbarVisible()) {
+    return exclusion_height;
+  }
+
+  // Gets where the bottom of the toolbar will be laid out.
+  const int provisional_toolbar_height =
+      GetBoundsWithExclusion(params, views().toolbar).height();
+  return std::max(exclusion_height, provisional_toolbar_height);
+}
+
 gfx::Size BrowserViewTabbedLayoutImpl::GetMinimumSize(
     const views::View* host) const {
   // This is a simplified version of the same method in
@@ -271,8 +298,8 @@ BrowserViewTabbedLayoutImpl::CalculateProposedLayout(
           views().vertical_tab_strip_container->GetPreferredSize().width();
       if (delegate().IsVerticalTabStripCollapsed()) {
         // Collapsed tabstrip sits underneath caption buttons when present.
-        vertical_tab_strip_relative_top = base::ClampCeil(
-            params.leading_exclusion.ContentWithPadding().height());
+        vertical_tab_strip_relative_top =
+            GetCollapsedVerticalTabStripRelativeTop(params);
         collapsed_vertical_tab_strip_adjustment =
             vertical_tab_strip_relative_top > 0 ? vertical_tab_strip_width : 0;
       } else {
@@ -367,10 +394,13 @@ BrowserViewTabbedLayoutImpl::CalculateProposedLayout(
         target_width * toolbar_height_side_panel_reveal_amount);
 
     // Add `container_inset_padding` to the top of the toolbar height side panel
-    // to separate it from the tab strip. SidePanel draws the top on top of the
-    // top content separator and some units of the toolbar by default, which is
-    // not needed for the toolbar height side panel.
-    const int top = params.visual_client_area.y() + container_inset_padding;
+    // to separate it from the horizontal tab strip. SidePanel draws the top on
+    // top of the top content separator and some units of the toolbar by
+    // default, which is not needed for the toolbar height side panel.
+    const int top =
+        params.visual_client_area.y() +
+        (tab_strip_type == TabStripType::kVertical ? 0
+                                                   : container_inset_padding);
     gfx::Rect toolbar_height_bounds(
         toolbar_height_side_panel_leading
             ? params.visual_client_area.x() - (target_width - visible_width)
@@ -397,7 +427,6 @@ BrowserViewTabbedLayoutImpl::CalculateProposedLayout(
     params.InsetHorizontal(visible_width, toolbar_height_side_panel_leading);
   }
 
-  // Lay out the shadow overlay.
   const bool show_shadow_overlay = ShadowOverlayVisible();
   if (show_shadow_overlay) {
     // As the toolbar height side panel animates in, the main panel shrinks and
@@ -405,13 +434,14 @@ BrowserViewTabbedLayoutImpl::CalculateProposedLayout(
     const int scaled_main_area_padding = base::ClampRound(
         toolbar_height_side_panel_reveal_amount * container_inset_padding);
     params.Inset(gfx::Insets::TLBR(
-        scaled_main_area_padding,
+        tab_strip_type == TabStripType::kVertical ? 0
+                                                  : scaled_main_area_padding,
         toolbar_height_side_panel_leading ? 0 : scaled_main_area_padding,
         scaled_main_area_padding,
         toolbar_height_side_panel_leading ? scaled_main_area_padding : 0));
   }
 
-  // Lay out the remainder of the main container.
+  // Lay out the shadow overlay.
   layout.AddChild(views().main_shadow_overlay, params.visual_client_area,
                   show_shadow_overlay);
 

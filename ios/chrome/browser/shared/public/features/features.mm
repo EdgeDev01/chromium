@@ -229,12 +229,6 @@ bool IsTabGridDragAndDropEnabled() {
   return base::FeatureList::IsEnabled(kTabGridDragAndDrop);
 }
 
-BASE_FEATURE(kTabGridEmptyThumbnail, base::FEATURE_ENABLED_BY_DEFAULT);
-
-bool IsTabGridEmptyThumbnailUIEnabled() {
-  return base::FeatureList::IsEnabled(kTabGridEmptyThumbnail);
-}
-
 BASE_FEATURE(kTabGridNewTransitions, base::FEATURE_DISABLED_BY_DEFAULT);
 
 bool IsNewTabGridTransitionsEnabled() {
@@ -1212,4 +1206,10 @@ BASE_FEATURE(kCloseOtherTabs, base::FEATURE_DISABLED_BY_DEFAULT);
 
 bool IsCloseOtherTabsEnabled() {
   return base::FeatureList::IsEnabled(kCloseOtherTabs);
+}
+
+BASE_FEATURE(kAssistantSheet, base::FEATURE_DISABLED_BY_DEFAULT);
+
+bool IsAssistantSheetEnabled() {
+  return base::FeatureList::IsEnabled(kAssistantSheet);
 }

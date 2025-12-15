@@ -944,6 +944,10 @@ _BANNED_CPP_FUNCTIONS: Sequence[BanRule] = (
             r'base/containers/span_unittest.cc',
             # //base/numerics can't use base or absl. So it uses std.
             r'base/numerics/.*',
+            # These files are in a separate build target and use std::span to
+            # interface with a 3P library, while avoiding a circular dependency
+            # on //base.
+            r'base/simdutf_shim.*',
 
             # The early zone registration can't use base or absl. So it uses
             # std.
@@ -1847,20 +1851,6 @@ _BANNED_CPP_FUNCTIONS: Sequence[BanRule] = (
             '^chrome/browser/ui/content_settings/',
             '^components/content_settings/',
             '^services/network/cookie_settings.cc',
-            '.*test.cc',
-        ),
-    ),
-    BanRule(
-        pattern=r'ContentSettingsType::TRACKING_PROTECTION',
-        explanation=
-        ('Do not directly use ContentSettingsType::TRACKING_PROTECTION to check '
-         'for tracking protection exceptions. Instead rely on the '
-         'privacy_sandbox::TrackingProtectionSettings API.', ),
-        treat_as_error=False,
-        excluded_paths=(
-            '^chrome/browser/ui/content_settings/',
-            '^components/content_settings/',
-            '^components/privacy_sandbox/tracking_protection_settings.cc',
             '.*test.cc',
         ),
     ),

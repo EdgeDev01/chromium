@@ -156,7 +156,7 @@ scoped_refptr<StaticBitmapImage> Canvas2DResourceProviderBitmap::Snapshot(
   return UnacceleratedSnapshot(orientation);
 }
 
-class CanvasResourceProviderExternalBitmap::SoftwareImageProvider
+class CanvasSnapshotProviderExternalBitmap::SoftwareImageProvider
     : public cc::ImageProvider {
  public:
   SoftwareImageProvider(cc::ImageDecodeCache* cache_n32,
@@ -216,28 +216,33 @@ class CanvasResourceProviderExternalBitmap::SoftwareImageProvider
   std::optional<cc::PlaybackImageProvider> playback_image_provider_f16_;
 };
 
-CanvasResourceProviderExternalBitmap::CanvasResourceProviderExternalBitmap(
+CanvasSnapshotProviderExternalBitmap::CanvasSnapshotProviderExternalBitmap(
     gfx::Size size,
     viz::SharedImageFormat format,
     SkAlphaType alpha_type,
     const gfx::ColorSpace& color_space)
-    : CanvasResourceProvider(kExternalBitmap,
-                             size,
-                             format,
-                             alpha_type,
-                             color_space,
-                             /*context_provider_wrapper=*/nullptr,
-                             /*delegate=*/nullptr) {}
-CanvasResourceProviderExternalBitmap::~CanvasResourceProviderExternalBitmap() {
-  // Clear `skia_canvas_` before `image_provider_` is destroyed.
-  skia_canvas_.reset();
-}
+    : size_(size),
+      format_(format),
+      alpha_type_(alpha_type),
+      color_space_(color_space),
+      snapshot_paint_image_id_(cc::PaintImage::GetNextId()),
+      info_(SkImageInfo::Make(size.width(),
+                              size.height(),
+                              viz::ToClosestSkColorType(format),
+                              alpha_type,
+                              color_space.ToSkColorSpace())),
+      recorder_(
+          std::make_unique<MemoryManagedPaintRecorder>(Size(),
+                                                       /*client=*/nullptr)) {}
 
-bool CanvasResourceProviderExternalBitmap::IsGpuContextLost() const {
+CanvasSnapshotProviderExternalBitmap::~CanvasSnapshotProviderExternalBitmap() =
+    default;
+
+bool CanvasSnapshotProviderExternalBitmap::IsGpuContextLost() const {
   return true;
 }
 
-bool CanvasResourceProviderExternalBitmap::IsValid() const {
+bool CanvasSnapshotProviderExternalBitmap::IsValid() const {
   if (!surface_) {
     const bool can_use_lcd_text = alpha_type_ == kOpaque_SkAlphaType;
     const auto props =
@@ -249,21 +254,17 @@ bool CanvasResourceProviderExternalBitmap::IsValid() const {
 }
 
 scoped_refptr<StaticBitmapImage>
-CanvasResourceProviderExternalBitmap::DoExternalDrawAndSnapshot(
+CanvasSnapshotProviderExternalBitmap::DoExternalDrawAndSnapshot(
     base::FunctionRef<void(MemoryManagedPaintCanvas&)> draw_callback,
     ImageOrientation orientation /*= ImageOrientationEnum::kDefault*/) {
+  // The static creation method returns nullptr if `IsValid()` is false on the
+  // created instance, and once `surface_` is created, it is never destroyed
+  // until the instance itself is destroyed.
+  CHECK(surface_);
+
   draw_callback(recorder_->getRecordingCanvas());
 
-  if (!IsValid()) {
-    return nullptr;
-  }
-
   if (recorder_->HasReleasableDrawOps()) {
-    // If a previous flush rasterized some paint ops, we lost part of the
-    // recording and must fallback to raster printing instead of vectorial
-    // printing.
-    clear_frame_ = false;
-
     if (!skia_canvas_) {
       if (!image_provider_) {
         // Create an ImageDecodeCache for half float images only if the canvas
@@ -285,8 +286,6 @@ CanvasResourceProviderExternalBitmap::DoExternalDrawAndSnapshot(
     }
 
     skia_canvas_->drawPicture(recorder_->ReleaseMainRecording());
-
-    last_recording_ = std::nullopt;
   }
 
   cc::PaintImage paint_image;
@@ -314,15 +313,6 @@ CanvasResourceProviderExternalBitmap::DoExternalDrawAndSnapshot(
   DCHECK(!paint_image.IsTextureBacked());
   return UnacceleratedStaticBitmapImage::Create(std::move(paint_image),
                                                 orientation);
-}
-
-sk_sp<SkSurface> CanvasResourceProviderExternalBitmap::CreateSkSurface() const {
-  TRACE_EVENT0("blink",
-               "CanvasResourceProviderExternalBitmap::CreateSkSurface");
-
-  const auto info = info_.makeAlphaType(kPremul_SkAlphaType);
-  const auto props = GetSkSurfaceProps();
-  return SkSurfaces::Raster(info, &props);
 }
 
 sk_sp<SkSurface> Canvas2DResourceProviderBitmap::CreateSkSurface() const {
@@ -1242,14 +1232,15 @@ void CanvasResourceProviderSharedImage::OnMemoryDump(
   }
 }
 
-std::unique_ptr<CanvasResourceProviderExternalBitmap>
-CanvasResourceProvider::CreateExternalBitmapProvider(
+std::unique_ptr<CanvasSnapshotProviderExternalBitmap>
+CanvasSnapshotProviderExternalBitmap::Create(
     gfx::Size size,
     viz::SharedImageFormat format,
     SkAlphaType alpha_type,
     const gfx::ColorSpace& color_space) {
-  auto provider = std::make_unique<CanvasResourceProviderExternalBitmap>(
-      size, format, alpha_type, color_space);
+  auto provider = base::WrapUnique<CanvasSnapshotProviderExternalBitmap>(
+      new CanvasSnapshotProviderExternalBitmap(size, format, alpha_type,
+                                               color_space));
   if (provider->IsValid()) {
     return provider;
   }

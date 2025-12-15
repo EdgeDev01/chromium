@@ -118,6 +118,8 @@
 #include "third_party/blink/renderer/core/editing/ephemeral_range.h"
 #include "third_party/blink/renderer/core/editing/frame_selection.h"
 #include "third_party/blink/renderer/core/editing/ime/input_method_controller.h"
+#include "third_party/blink/renderer/core/editing/markers/document_marker.h"
+#include "third_party/blink/renderer/core/editing/markers/document_marker_controller.h"
 #include "third_party/blink/renderer/core/editing/serializers/create_markup_options.h"
 #include "third_party/blink/renderer/core/editing/serializers/serialization.h"
 #include "third_party/blink/renderer/core/editing/spellcheck/spell_check_requester.h"
@@ -261,6 +263,17 @@
 namespace blink {
 
 namespace {
+
+std::vector<gfx::Range> ExtractMisspellingRangesFromDocumentMarkerVector(
+    const DocumentMarkerVector& markers) {
+  std::vector<gfx::Range> ranges;
+  for (auto& marker : markers) {
+    if (marker->GetType() == DocumentMarker::MarkerType::kSpelling) {
+      ranges.emplace_back(marker->StartOffset(), marker->EndOffset());
+    }
+  }
+  return ranges;
+}
 
 // Max size in bytes of the Vector used in ForceSynchronousDocumentInstall to
 // buffer data before sending it to the HTML parser.
@@ -1174,6 +1187,12 @@ void LocalFrame::HookBackForwardCacheEviction() {
   // the frame must not be mutated e.g., by JavaScript execution, then the
   // frame must be evicted in such cases.
   DCHECK(RuntimeEnabledFeatures::BackForwardCacheEnabled());
+  if (base::FeatureList::IsEnabled(
+          features::kBackForwardCachePauseMicrotasks)) {
+    if (LocalDOMWindow* window = DomWindow()) {
+      microtasks_pauser_ = window->GetAgent()->event_loop()->PauseMicrotasks();
+    }
+  }
   static_cast<LocalWindowProxyManager*>(GetWindowProxyManager())
       ->SetAbortScriptExecution(
           [](v8::Isolate* isolate, v8::Local<v8::Context> context) {
@@ -1212,6 +1231,7 @@ void LocalFrame::RemoveBackForwardCacheEviction() {
   // for any reason. Change the deferring state from |kBufferIncoming| to
   // |kStrict| so that network related eviction cannot happen.
   GetDocument()->Fetcher()->SetDefersLoading(LoaderFreezeMode::kStrict);
+  microtasks_pauser_.reset();
 }
 
 void LocalFrame::SetTextDirection(base::i18n::TextDirection direction) {
@@ -4263,7 +4283,11 @@ void LocalFrame::PerformSpellCheck() {
 
   const EphemeralRange range(Position(container_node, 0),
                              Position::LastPositionInNode(*container_node));
-  GetSpellChecker().GetSpellCheckRequester().RequestCheckingFor(range);
+  GetSpellChecker().GetSpellCheckRequester().RequestCheckingFor(
+      range,
+      ExtractMisspellingRangesFromDocumentMarkerVector(
+          GetDocument()->Markers().Markers()),
+      /*request_num=*/0, /*should_force_refresh=*/false);
 }
 
 }  // namespace blink

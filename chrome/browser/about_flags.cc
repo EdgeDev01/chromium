@@ -128,6 +128,7 @@
 #include "components/omnibox/browser/omnibox_field_trial.h"
 #include "components/omnibox/common/omnibox_feature_configs.h"
 #include "components/omnibox/common/omnibox_features.h"
+#include "components/on_device_translation/buildflags/buildflags.h"
 #include "components/open_from_clipboard/clipboard_recent_content_features.h"
 #include "components/optimization_guide/core/model_execution/model_execution_features.h"
 #include "components/optimization_guide/core/optimization_guide_features.h"
@@ -162,7 +163,6 @@
 #include "components/send_tab_to_self/features.h"
 #include "components/sensitive_content/features.h"
 #include "components/services/heap_profiling/public/cpp/switches.h"
-#include "components/services/on_device_translation/buildflags/buildflags.h"
 #include "components/services/storage/public/cpp/buckets/bucket_info.h"
 #include "components/shared_highlighting/core/common/shared_highlighting_features.h"
 #include "components/sharing_message/features.h"
@@ -871,38 +871,44 @@ const FeatureEntry::FeatureParam kWebUIOmniboxAimPopupAddContextButtonNone[] = {
     {"AddContextButtonVariant", "none"},
     {"ShowCreateImageTool", "true"},
     {"ShowToolsAndModels", "true"},
-    {"ShowVoiceSearchInSteadyComposebox","true"},
-    {"ShowVoiceSearchInExpandedComposebox","true"},
+    {"ShowVoiceSearchInSteadyComposebox", "true"},
+    {"ShowVoiceSearchInExpandedComposebox", "true"},
 };
 const FeatureEntry::FeatureParam
     kWebUIOmniboxAimPopupAddContextButtonBelowResults[] = {
         {"AddContextButtonVariant", "below_results"},
         {"ShowCreateImageTool", "true"},
+        {"ShowLensSearchChip", "true"},
         {"ShowToolsAndModels", "true"},
-        {"ShowVoiceSearchInSteadyComposebox","true"},
-        {"ShowVoiceSearchInExpandedComposebox","true"},
+        {"ShowVoiceSearchInSteadyComposebox", "true"},
+        {"ShowVoiceSearchInExpandedComposebox", "true"},
 };
 const FeatureEntry::FeatureParam
     kWebUIOmniboxAimPopupAddContextButtonAboveResults[] = {
         {"AddContextButtonVariant", "above_results"},
         {"ShowCreateImageTool", "true"},
+        {"ShowLensSearchChip", "true"},
         {"ShowToolsAndModels", "true"},
-        {"ShowVoiceSearchInSteadyComposebox","true"},
-        {"ShowVoiceSearchInExpandedComposebox","true"},
+        {"ShowVoiceSearchInSteadyComposebox", "true"},
+        {"ShowVoiceSearchInExpandedComposebox", "true"},
 };
 const FeatureEntry::FeatureParam kWebUIOmniboxAimPopupAddContextButtonInline[] =
     {
         {"AddContextButtonVariant", "inline"},
         {"ShowCreateImageTool", "true"},
+        {"ShowLensSearchChip", "true"},
         {"ShowToolsAndModels", "true"},
-        {"ShowVoiceSearchInSteadyComposebox","true"},
-        {"ShowVoiceSearchInExpandedComposebox","true"},
+        {"ShowVoiceSearchInSteadyComposebox", "true"},
+        {"ShowVoiceSearchInExpandedComposebox", "true"},
 };
 const FeatureEntry::FeatureParam
     kWebUIOmniboxAimPopupAddContextButtonMultiFile[] = {
         {"AddContextButtonVariant", "below_results"},
         {"ShowCreateImageTool", "true"},
+        {"ShowLensSearchChip", "true"},
         {"ShowToolsAndModels", "true"},
+        {"ShowVoiceSearchInSteadyComposebox", "true"},
+        {"ShowVoiceSearchInExpandedComposebox", "true"},
         {"MaxNumFiles", "5"},
 };
 const FeatureEntry::FeatureParam
@@ -5008,6 +5014,19 @@ constexpr char kWebiumFlag[] = "webium";
 constexpr char kWebiumFeatures[] =
     "Webium,AttachUnownedInnerWebContents,ExtensionsMenuAccessControl";
 #endif  // !BUILDFLAG(IS_ANDROID)
+
+const FeatureEntry::FeatureParam kMobilePromoOnDesktopForcePromoTypeQRCode[] = {
+    {kMobilePromoOnDesktopForcePromoTypeParam, "0"}};
+const FeatureEntry::FeatureParam kMobilePromoOnDesktopForcePromoTypeReminder[] =
+    {{kMobilePromoOnDesktopForcePromoTypeParam, "1"}};
+
+const FeatureEntry::FeatureVariation
+    kMobilePromoOnDesktopForcePromoTypeVariations[] = {
+        {"QRCode", kMobilePromoOnDesktopForcePromoTypeQRCode,
+         std::size(kMobilePromoOnDesktopForcePromoTypeQRCode), nullptr},
+        {"Reminder", kMobilePromoOnDesktopForcePromoTypeReminder,
+         std::size(kMobilePromoOnDesktopForcePromoTypeReminder), nullptr},
+};
 
 const FeatureEntry::FeatureParam kMobilePromoOnDesktopLens[] = {
     {kMobilePromoOnDesktopPromoTypeParam, "1"},
@@ -12478,6 +12497,16 @@ const FeatureEntry kFeatureEntries[] = {
         FEATURE_VALUE_TYPE(features::kNewContentForCheckerboardedScrolls),
     },
 
+    {"autofill-enable-multiple-request-in-virtual-card-downstream-enrollment",
+     flag_descriptions::
+         kAutofillEnableMultipleRequestInVirtualCardDownstreamEnrollmentName,
+     flag_descriptions::
+         kAutofillEnableMultipleRequestInVirtualCardDownstreamEnrollmentDescription,
+     kOsAll,
+     FEATURE_VALUE_TYPE(
+         autofill::features::
+             kAutofillEnableMultipleRequestInVirtualCardDownstreamEnrollment)},
+
     {"page-actions-migration", flag_descriptions::kPageActionsMigrationName,
      flag_descriptions::kPageActionsMigrationDescription, kOsDesktop,
      FEATURE_WITH_PARAMS_VALUE_TYPE(features::kPageActionsMigration,
@@ -12880,6 +12909,13 @@ const FeatureEntry kFeatureEntries[] = {
      kOsAll,
      FEATURE_VALUE_TYPE(
          autofill::features::kAutofillEnableSupportForNameAndEmail)},
+    {"mobile-promo-on-desktop-force-promo-type",
+     flag_descriptions::kMobilePromoOnDesktopForcePromoTypeName,
+     flag_descriptions::kMobilePromoOnDesktopForcePromoTypeDescription, kOsAll,
+     FEATURE_WITH_PARAMS_VALUE_TYPE(
+         kMobilePromoOnDesktopForcePromoType,
+         kMobilePromoOnDesktopForcePromoTypeVariations,
+         "MobilePromoOnDesktopForcePromo")},
     {"mobile-promo-on-desktop", flag_descriptions::kMobilePromoOnDesktopName,
      flag_descriptions::kMobilePromoOnDesktopDescription, kOsAll,
      FEATURE_WITH_PARAMS_VALUE_TYPE(kMobilePromoOnDesktop,
@@ -13542,6 +13578,14 @@ const FeatureEntry kFeatureEntries[] = {
      flag_descriptions::kAndroidPkAutocorrectUnderlineName,
      flag_descriptions::kAndroidPkAutocorrectUnderlineDescription, kOsAndroid,
      FEATURE_VALUE_TYPE(features::kAndroidPkAutocorrectUnderline)},
+#endif
+
+#if BUILDFLAG(IS_ANDROID)
+    {"enable-android-spelling-underline-in-composition-mode",
+     flag_descriptions::kAndroidSpellingUnderlineInCompositionModeName,
+     flag_descriptions::kAndroidSpellingUnderlineInCompositionModeDescription,
+     kOsAndroid,
+     FEATURE_VALUE_TYPE(features::kAndroidSpellingUnderlineInCompositionMode)},
 #endif
 
 #if BUILDFLAG(IS_MAC)

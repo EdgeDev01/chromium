@@ -687,7 +687,7 @@ tabs::TabModel* TabStripModel::GetTabModelAtIndex(int index) const {
 
 void TabStripModel::OnChange(const TabStripModelChange& change,
                              const TabStripSelectionChange& selection) {
-  ValidateTabStripModel();
+  CompleteModelUpdateTransaction();
   OnActiveTabChanged(selection);
 
   for (auto& observer : observers_) {
@@ -1997,7 +1997,6 @@ void TabStripModel::RestoreSplit(split_tabs::SplitTabId split_id,
   ReentrancyCheck reentrancy_check(&reentrancy_guard_);
   CHECK(std::ranges::is_sorted(indices));
   CHECK_EQ(indices.size(), 2u);
-  CHECK(features::IsRestoringSplitViewEnabled());
 
   // Ideally these are consecutive indices from the restore flow and the pivot
   // index does not matter. However, given there are numerous steps in restore
@@ -3636,6 +3635,7 @@ void TabStripModel::CloseTabs(base::span<content::WebContents* const> items,
   if (!ref) {
     return;
   }
+
   if (closing_all) {
     // CloseAllTabsStopped is sent with reason kCloseAllCompleted if
     // closed_all; otherwise kCloseAllCanceled is sent.
@@ -4514,6 +4514,8 @@ void TabStripModel::MoveTabToIndexImpl(
 
   UpdateSelectionModelForMove(initial_index, final_index, select_after_move);
 
+  CompleteModelUpdateTransaction();
+
   selection.new_model = selection_model().ToListSelectionModel();
   selection.new_tab = GetActiveTab();
   selection.new_contents = GetActiveWebContents();
@@ -4540,7 +4542,6 @@ void TabStripModel::MoveTabToIndexImpl(
       TabGroupStateChanged(final_index, tab, initial_group, tab->GetGroup());
     }
   }
-
 }
 
 void TabStripModel::MoveTabsToIndexImpl(
@@ -4606,7 +4607,7 @@ void TabStripModel::TabGroupStateChanged(
       NotifyTabGroupClosed(initial_group.value());
       group_model_->RemoveTabGroup(initial_group.value(),
                                    base::PassKey<TabStripModel>());
-      ValidateTabStripModel();
+      CompleteModelUpdateTransaction();
       contents_data_->CloseDetachedTabGroup(initial_group.value());
     }
   }
@@ -4648,7 +4649,7 @@ void TabStripModel::AddTabToGroupModel(const tab_groups::TabGroupId& group) {
   tab_group->AddTab();
 }
 
-void TabStripModel::ValidateTabStripModel() {
+void TabStripModel::CompleteModelUpdateTransaction() {
   contents_data_->ValidateData();
 
   // Send the notifications for the root collection.
@@ -4943,7 +4944,7 @@ void TabStripModel::MoveTabsWithNotifications(
 
   UpdateSelectionModelForMoves(tab_indices, destination_index);
 
-  ValidateTabStripModel();
+  CompleteModelUpdateTransaction();
 
   for (const auto& notification : notifications) {
     const int final_index = GetIndexOfTab(notification.tab);

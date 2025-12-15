@@ -878,6 +878,16 @@ inline constexpr char
         "or "
         "the first 2 chips to display a part of the next chip.";
 
+inline constexpr char
+    kAutofillEnableMultipleRequestInVirtualCardDownstreamEnrollmentName[] =
+        "Enable multiple server request support for virtual card downstream "
+        "enrollment";
+inline constexpr char
+    kAutofillEnableMultipleRequestInVirtualCardDownstreamEnrollmentDescription
+        [] = "When enabled, Chrome will be able to send preflight call for "
+             "enrollment earlier in the flow with the multiple server request "
+             "support.";
+
 inline constexpr char kAutofillEnableNewFopDisplayAndroidName[] =
     "Enable Autofill new FOP display on Android";
 inline constexpr char kAutofillEnableNewFopDisplayAndroidDescription[] =
@@ -2725,6 +2735,12 @@ inline constexpr char kMigrateSyncingUserToSignedInName[] =
 inline constexpr char kMigrateSyncingUserToSignedInDescription[] =
     "When enabled, a syncing user is migrated to the signed in non-syncing "
     "state on the next browser startup.";
+
+inline constexpr char kMobilePromoOnDesktopForcePromoTypeName[] =
+    "Force iOS Promo Type";
+inline constexpr char kMobilePromoOnDesktopForcePromoTypeDescription[] =
+    "Force the iOS promo to be a specific type (QRCode or Reminder) for "
+    "testing purposes.";
 
 inline constexpr char kMobilePromoOnDesktopName[] = "Mobile Promo On Desktop";
 inline constexpr char kMobilePromoOnDesktopDescription[] =
@@ -4944,6 +4960,12 @@ inline constexpr char kAndroidSpellcheckNativeUiName[] =
     "Enable native-like spellcheck underline UI";
 inline constexpr char kAndroidSpellcheckNativeUiDescription[] =
     "Makes the spellcheck underline style the same as native applications";
+
+inline constexpr char kAndroidSpellingUnderlineInCompositionModeName[] =
+    "Enable Android spelling underline in composition mode";
+inline constexpr char kAndroidSpellingUnderlineInCompositionModeDescription[] =
+    "When enabled, misspelling / grammar underline could be shown when "
+    "entering composition mode";
 
 inline constexpr char kAndroidSurfaceColorUpdateName[] =
     "Android surface color update.";

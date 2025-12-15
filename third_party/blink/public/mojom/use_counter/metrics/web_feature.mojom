@@ -3435,7 +3435,7 @@ enum WebFeature {
   kOBSOLETE_BlobStoreAccessAcrossTopLevelSite = 4169,
   kOBSOLETE_BlobStoreAccessUnknownTopLevelSite = 4170,
   kCrossOriginAccessBasedOnDocumentDomain = 4171,
-  kCookieWithTruncatingChar = 4172,
+  kOBSOLETE_CookieWithTruncatingChar = 4172,
   kVideoTrackGenerator = 4173,
   kMediaCapabilitiesDecodingInfoWebrtc = 4174,
   kMediaCapabilitiesEncodingInfoWebrtc = 4175,
@@ -5083,6 +5083,7 @@ enum WebFeature {
   kDigitalCredentialsProtocolOpenId4VpMultisigned = 5767,
   kDigitalCredentialsProtocolOrgIsoMdoc = 5768,
   kDigitalCredentialsProtocolOpenId4Vci = 5769,
+  kDigitalCredentialsProtocolUnknown = 5770,
 
   // Add new features immediately above this line. Don't change assigned
   // numbers of any item, and don't reuse removed slots. Also don't add extra

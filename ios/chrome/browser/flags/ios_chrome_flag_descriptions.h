@@ -47,6 +47,9 @@ extern const char kApplyClientsideModelPredictionsForPasswordTypesDescription[];
 extern const char kAskGeminiChipName[];
 extern const char kAskGeminiChipDescription[];
 
+extern const char kAssistantSheetName[];
+extern const char kAssistantSheetDescription[];
+
 extern const char kAutofillAcrossIframesName[];
 extern const char kAutofillAcrossIframesDescription[];
 
@@ -90,6 +93,12 @@ extern const char
 
 extern const char kAutofillEnableFlatRateCardBenefitsFromCurinosName[];
 extern const char kAutofillEnableFlatRateCardBenefitsFromCurinosDescription[];
+
+extern const char
+    kAutofillEnableMultipleRequestInVirtualCardDownstreamEnrollmentName[];
+extern const char
+    kAutofillEnableMultipleRequestInVirtualCardDownstreamEnrollmentDescription
+        [];
 
 extern const char kAutofillEnablePrefetchingRiskDataForRetrievalName[];
 extern const char kAutofillEnablePrefetchingRiskDataForRetrievalDescription[];
@@ -186,6 +195,9 @@ extern const char kComposeboxAttachmentsTypedStateDescription[];
 
 extern const char kComposeboxAutoattachTabName[];
 extern const char kComposeboxAutoattachTabDescription[];
+
+extern const char kComposeboxCloseButtonTopAlignName[];
+extern const char kComposeboxCloseButtonTopAlignDescription[];
 
 extern const char kComposeboxCompactModeName[];
 extern const char kComposeboxCompactModeDescription[];
@@ -639,9 +651,6 @@ extern const char kLensUnaryHttpTransportEnabledDescription[];
 extern const char kLensWebPageLoadOptimizationEnabledName[];
 extern const char kLensWebPageLoadOptimizationEnabledDescription[];
 
-extern const char kLinkedServicesSettingIosName[];
-extern const char kLinkedServicesSettingIosDescription[];
-
 extern const char kLocationBarBadgeMigrationName[];
 extern const char kLocationBarBadgeMigrationDescription[];
 
@@ -855,6 +864,9 @@ extern const char kReaderModeDescription[];
 extern const char kReaderModeNewCssName[];
 extern const char kReaderModeNewCssDescription[];
 
+extern const char kReaderModeOmniboxEntrypointName[];
+extern const char kReaderModeOmniboxEntrypointDescription[];
+
 extern const char kReaderModeOptimizationGuideEligibilityName[];
 extern const char kReaderModeOptimizationGuideEligibilityDescription[];
 
@@ -943,9 +955,6 @@ extern const char kSmartTabGroupingDescription[];
 extern const char kSpotlightNeverRetainIndexName[];
 extern const char kSpotlightNeverRetainIndexDescription[];
 
-extern const char kStartSurfaceName[];
-extern const char kStartSurfaceDescription[];
-
 extern const char kStrokesAPIEnabledName[];
 extern const char kStrokesAPIEnabledDescription[];
 
@@ -963,9 +972,6 @@ extern const char kSyncTrustedVaultInfobarMessageImprovementsDescription[];
 
 extern const char kTabGridDragAndDropName[];
 extern const char kTabGridDragAndDropDescription[];
-
-extern const char kTabGridEmptyThumbnailName[];
-extern const char kTabGridEmptyThumbnailDescription[];
 
 extern const char kTabGridNewTransitionsName[];
 extern const char kTabGridNewTransitionsDescription[];

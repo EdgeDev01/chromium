@@ -11,7 +11,6 @@
 #include "chrome/browser/extensions/extension_browsertest.h"
 #include "chrome/browser/extensions/extension_tab_util.h"
 #include "chrome/browser/profiles/profile.h"
-#include "chrome/browser/ui/extensions/extensions_menu_view_platform_delegate.h"
 #include "chrome/grit/generated_resources.h"
 #include "components/crx_file/id_util.h"
 #include "content/public/browser/web_contents.h"
@@ -36,37 +35,6 @@ namespace {
 
 using PermissionsManager = extensions::PermissionsManager;
 using SitePermissionsHelper = extensions::SitePermissionsHelper;
-
-// A mock extensions menu platform delegate.
-class TestPlatformDelegate : public ExtensionsMenuViewPlatformDelegate {
- public:
-  TestPlatformDelegate() = default;
-  ~TestPlatformDelegate() override = default;
-
-  void AttachToModel(ExtensionsMenuViewModel* model) override {}
-  void DetachFromModel() override {}
-  void OnActiveWebContentsChanged(content::WebContents* web_contents) override {
-  }
-  void OnHostAccessRequestAddedOrUpdated(
-      const extensions::ExtensionId& extension_id,
-      content::WebContents* web_contents) override {}
-  void OnHostAccessRequestRemoved(
-      const extensions::ExtensionId& extension_id) override {}
-  void OnHostAccessRequestsCleared() override {}
-  void OnHostAccessRequestDismissedByUser(
-      const extensions::ExtensionId& extension_id) override {}
-  void OnShowHostAccessRequestsInToolbarChanged(
-      const extensions::ExtensionId& extension_id,
-      bool can_show_requests) override {}
-  void OnUserPermissionsSettingsChanged() override {}
-  void OnToolbarActionAdded(
-      const ToolbarActionsModel::ActionId& action_id) override {}
-  void OnToolbarActionRemoved(
-      const ToolbarActionsModel::ActionId& action_id) override {}
-  void OnToolbarModelInitialized() override {}
-  void OnToolbarActionUpdated() override {}
-  void OnToolbarPinnedActionsChanged() override {}
-};
 
 }  // namespace
 
@@ -194,8 +162,8 @@ void ExtensionsMenuViewModelBrowserTest::SetUpOnMainThread() {
   host_resolver()->AddRule("*", "127.0.0.1");
   ASSERT_TRUE(embedded_test_server()->Start());
 
-  menu_model_ = std::make_unique<ExtensionsMenuViewModel>(
-      browser_window_interface(), std::make_unique<TestPlatformDelegate>());
+  menu_model_ =
+      std::make_unique<ExtensionsMenuViewModel>(browser_window_interface());
 
   permissions_helper_ = std::make_unique<SitePermissionsHelper>(profile());
   permissions_manager_ = PermissionsManager::Get(profile());
@@ -937,18 +905,20 @@ IN_PROC_BROWSER_TEST_F(ExtensionsMenuViewModelBrowserTest,
 
   // When site setting is set to 'block all extensions':
   //   - site access toggle is hidden
-  //   - site permissions button is hidden.
-  //     TODO(emiliapaz): An enterprise extension should be able to get access
-  //     to the site. Investigate if this is true for 'on click' enterprise
-  //     extensions, and update the button state to 'disabled' instead of
-  //     'hidden' to reflect this.
+  //   - site permissions button is disabled.
   menu_model()->UpdateSiteSetting(
       PermissionsManager::UserSiteSetting::kBlockAllExtensions);
   menu_item_state = menu_model()->GetMenuItemState(extension->id());
   EXPECT_EQ(menu_item_state.site_access_toggle.status,
             ExtensionsMenuViewModel::ControlState::Status::kHidden);
   EXPECT_EQ(menu_item_state.site_permissions_button.status,
-            ExtensionsMenuViewModel::ControlState::Status::kHidden);
+            ExtensionsMenuViewModel::ControlState::Status::kDisabled);
+  EXPECT_EQ(menu_item_state.site_permissions_button.text,
+            u"Ask on every visit");
+  EXPECT_EQ(menu_item_state.site_permissions_button.accessible_name,
+            u"Ask on every visit. Installed by your administrator");
+  EXPECT_EQ(menu_item_state.site_permissions_button.tooltip_text,
+            u"Installed by your administrator");
 }
 
 // Tests the menu item state for an enterprise extension that requests access to

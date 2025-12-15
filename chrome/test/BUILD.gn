@@ -25,10 +25,10 @@ import("//components/compose/features.gni")
 import("//components/enterprise/buildflags/buildflags.gni")
 import("//components/lens/features.gni")
 import("//components/offline_pages/buildflags/features.gni")
+import("//components/on_device_translation/buildflags/features.gni")
 import("//components/optimization_guide/features.gni")
 import("//components/os_crypt/sync/features.gni")
 import("//components/safe_browsing/buildflags.gni")
-import("//components/services/on_device_translation/buildflags/features.gni")
 import("//components/soda/buildflags.gni")
 import("//components/spellcheck/spellcheck_build_features.gni")
 import("//content/browser/devtools/features.gni")
@@ -3536,6 +3536,7 @@ if (!is_android) {
       "../browser/policy/test/default_search_provider_policy_browsertest.cc",
       "../browser/policy/test/force_google_safe_search_policy_browsertest.cc",
       "../browser/policy/test/history_clusters_policy_browsertest.cc",
+      "../browser/policy/test/incognito_mode_blocklist_policy_browsertest.cc",
       "../browser/policy/test/jit_policy_browsertest.cc",
       "../browser/policy/test/platform_management_service_browsertest.cc",
       "../browser/policy/test/policy_browsertest.cc",
@@ -3637,6 +3638,7 @@ if (!is_android) {
       "../browser/supervised_user/supervised_user_regional_url_filter_browsertest.cc",
       "../browser/supervised_user/supervised_user_service_browsertest.cc",
       "../browser/supervised_user/supervised_user_url_filter_browsertest.cc",
+      "../browser/supervised_user/supervised_user_url_filtering_service_common_browsertest.cc",
       "../browser/supervised_user/url_filter_interactive_uitest.cc",
       "../browser/support_tool/policy_data_collector_browsertest.cc",
       "../browser/support_tool/support_tool_util_browsertest.cc",
@@ -8735,6 +8737,7 @@ test("unit_tests") {
       "//components/media_effects/test:test_support",
       "//components/media_message_center:test_support",
       "//components/media_router/common:test_support",
+      "//components/on_device_translation/buildflags",
       "//components/optimization_guide/core",
       "//components/optimization_guide/proto:optimization_guide_proto",
       "//components/permissions:test_support",
@@ -8750,7 +8753,6 @@ test("unit_tests") {
       "//components/services/app_service",
       "//components/services/app_service/public/cpp:test_support",
       "//components/services/app_service/public/cpp:unit_tests",
-      "//components/services/on_device_translation/buildflags",
       "//components/session_proto_db",
       "//components/sharing_message",
       "//components/signin/public/base:signin_buildflags",
@@ -11734,6 +11736,7 @@ if (!is_android && !is_chromeos_device) {
 
     if (is_mac) {
       sources += [ "../installer/mac/keystone_install_unittest.cc" ]
+      deps += [ "../installer/mac:install_test_util" ]
       data += [
         "//chrome/installer/mac/keystone_install.sh",
         "//chrome/installer/mac/keystone_install_test.sh",

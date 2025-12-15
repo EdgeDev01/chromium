@@ -52,6 +52,9 @@ const char kApplyClientsideModelPredictionsForPasswordTypesDescription[] =
 const char kAskGeminiChipName[] = "Ask Gemini Chip";
 const char kAskGeminiChipDescription[] = "Enables the Ask Gemini Chip feature.";
 
+const char kAssistantSheetName[] = "AssistantSheet";
+const char kAssistantSheetDescription[] = "Enables the assistantSheet feature.";
+
 const char kAutofillAcrossIframesName[] = "Enables Autofill across iframes";
 const char kAutofillAcrossIframesDescription[] =
     "When enabled, Autofill will fill and save information on forms that "
@@ -137,6 +140,16 @@ const char kAutofillEnableFlatRateCardBenefitsFromCurinosName[] =
 const char kAutofillEnableFlatRateCardBenefitsFromCurinosDescription[] =
     "When enabled, flat rate card benefits sourced from Curinos will be shown "
     "in Autofill suggestions.";
+
+const char
+    kAutofillEnableMultipleRequestInVirtualCardDownstreamEnrollmentName[] =
+        "Enable multiple server request support for virtual card downstream "
+        "enrollment";
+const char
+    kAutofillEnableMultipleRequestInVirtualCardDownstreamEnrollmentDescription
+        [] = "When enabled, Chrome will be able to send preflight call for "
+             "enrollment earlier in the flow with the multiple server request "
+             "support.";
 
 const char kAutofillEnablePrefetchingRiskDataForRetrievalName[] =
     "Enable prefetching of risk data during payments autofill retrieval";
@@ -314,6 +327,13 @@ const char kComposeboxAutoattachTabName[] =
 const char kComposeboxAutoattachTabDescription[] =
     "When enabled, the composebox will automatically attach curent tab as "
     "context.";
+
+const char kComposeboxCloseButtonTopAlignName[] =
+    "Align the close button in composebox to the top edge of the view";
+const char kComposeboxCloseButtonTopAlignDescription[] =
+    "If the user preference is set to top, enabling this feature aligns the "
+    "compose box close button with the top edge of the input plate instead of "
+    "centering.";
 
 const char kComposeboxCompactModeName[] = "ComposeboxCompactMode";
 const char kComposeboxCompactModeDescription[] =
@@ -1061,10 +1081,6 @@ const char kLensWebPageLoadOptimizationEnabledName[] =
 const char kLensWebPageLoadOptimizationEnabledDescription[] =
     "Enables optmized loading for the Lens web page.";
 
-const char kLinkedServicesSettingIosName[] = "Linked Services Setting";
-const char kLinkedServicesSettingIosDescription[] =
-    "Add Linked Services Setting to the Sync Settings page.";
-
 const char kLocationBarBadgeMigrationName[] = "LocationBarBadgeMigration";
 const char kLocationBarBadgeMigrationDescription[] =
     "Enables the LocationBarBadgeMigration feature.";
@@ -1426,6 +1442,11 @@ const char kReaderModeNewCssName[] = "Reader mode new CSS on iOS";
 const char kReaderModeNewCssDescription[] =
     "Enables the new CSS for Reader mode on iOS.";
 
+const char kReaderModeOmniboxEntrypointName[] =
+    "Reader Mode Omnibox Entrypoint";
+const char kReaderModeOmniboxEntrypointDescription[] =
+    "Enables an entrypoint in the Omnibox for Reader Mode.";
+
 const char kReaderModeOptimizationGuideEligibilityName[] =
     "Enables Reader Mode Optimization Guide Eligibility";
 const char kReaderModeOptimizationGuideEligibilityDescription[] =
@@ -1572,11 +1593,6 @@ const char kSpotlightNeverRetainIndexDescription[] =
     "Tentative spotlight memory improvement by not storing a strong pointer to "
     "the spotlight default index";
 
-const char kStartSurfaceName[] = "Start Surface";
-const char kStartSurfaceDescription[] =
-    "Enable showing the Start Surface when launching Chrome via clicking the "
-    "icon or the app switcher.";
-
 const char kStrokesAPIEnabledName[] = "Enable Strokes API for Lens";
 const char kStrokesAPIEnabledDescription[] =
     "When enabled, Lens will use the Strokes API.";
@@ -1605,11 +1621,6 @@ const char kTabGridDragAndDropName[] = "Enable Drag and Drop in Tab Grid";
 const char kTabGridDragAndDropDescription[] =
     "Enables drag and drop in the tab grid to reorder tabs and create tab "
     "groups.";
-
-const char kTabGridEmptyThumbnailName[] = "Enable empty thumbnail in TabGrid";
-const char kTabGridEmptyThumbnailDescription[] =
-    "When enabled, the tab grid will show an empty thumbnail for tabs that "
-    "don't have one.";
 
 const char kTabGridNewTransitionsName[] = "Enable new TabGrid transitions";
 const char kTabGridNewTransitionsDescription[] =
